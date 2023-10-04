@@ -1,6 +1,8 @@
 from re import S
 import tkinter as tk
 import time
+import os
+import math
 
 root = tk.Tk()
 root.title("Map Designer")
@@ -8,6 +10,9 @@ root.title("Map Designer")
 def save_file(event):
     print("bung")
 
+
+PATH = "C:\\Users\\alfre\\Source\\repos\\alfredsandare\\MonoGameTest\\MonoGameTest\\Content\\"
+#PATH = "C:\\users\\04alsa25\\source\\repos\\MonoGameTest\\MonoGameTest\\Content\\"
 
 menubar = tk.Menu(root)
 
@@ -19,7 +24,7 @@ root.config(menu=menubar)
 class Map:
     def __init__(self, root):
         self.canvas = tk.Canvas(root, width=1400, height=800)
-        self.canvas.pack()
+        self.canvas.grid(row=1, column=0, padx=4)
         
         self.xpos = 0
         self.ypos = 0
@@ -29,7 +34,9 @@ class Map:
         
         self._map = []
         
-        with open("C:\\users\\04alsa25\\source\\repos\\MonoGameTest\\MonoGameTest\\Content\\map.txt", "r") as file:
+
+        
+        with open(PATH+"map.txt", "r") as file:
             for line in file:
                 args = line.split()
                 self._map.append(MapObject(*args))
@@ -71,7 +78,30 @@ class MapObject:
 class TileSelection:
     def __init__(self, root):
         self.canvas = tk.Canvas(root, width=1400, height=100)
-        self.canvas.pack()
+        self.canvas.grid(row=0, column=0)
+        self.canvas.bind("<Button-1>", self.click)
+        
+        
+        self.selected_sprite = 0
+        
+        self.sprites = {}
+        os.chdir(PATH+"tiles\\")
+        items = os.listdir()
+        for item in items:
+            self.sprites[item[:-4]] = tk.PhotoImage(file=PATH+"tiles\\"+item)
+            
+        self.selection_images = []
+        for i, sprite in enumerate(self.sprites.values()):
+            self.selection_images.append(self.canvas.create_image(40*i+5, 5, anchor=tk.NW, image=self.sprites[list(self.sprites.keys())[i]]))
+            
+        self.selection_rect = self.canvas.create_rectangle(3, 3, 39, 39, width=2)
+            
+    def click(self, event):
+        item = math.floor(event.x / 40)
+        if item < len(self.selection_images):
+            self.selected_sprite = item
+            self.canvas.coords(self.selection_rect, 40*item+3, 3, 40*item+39, 39)
+        
         
 
 tile_selection = TileSelection(root)
