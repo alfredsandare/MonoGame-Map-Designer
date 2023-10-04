@@ -1,0 +1,23 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34031.279
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "MonoGame Map Designer", "MonoGame Map Designer\MonoGame Map Designer.pyproj", "{C0B4BCCB-6D74-4DC1-BD4E-DFB73D306020}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C0B4BCCB-6D74-4DC1-BD4E-DFB73D306020}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0B4BCCB-6D74-4DC1-BD4E-DFB73D306020}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A39DFFA8-E705-4430-8CFD-BDB0B88DCDE8}
+	EndGlobalSection
+EndGlobal
