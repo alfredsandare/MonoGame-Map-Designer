@@ -51,6 +51,9 @@ class Settings:
         self.mapmode_layer_radiobutton = tk.Radiobutton(root, var=self.mapmode_var, text="Solid", value="solid")
         self.mapmode_layer_radiobutton.grid(row=7, column=0, sticky=tk.W, columnspan=2)
         
+        self.empty = tk.Label(text="")
+        self.empty.grid(row=8, column=0, pady=260)
+        
 
 class Map:
     def __init__(self, root):
@@ -59,7 +62,7 @@ class Map:
         self.canvas.bind("<Button-1>", self.click)
         self.canvas.bind("<Button-3>", self.click)
         
-        self.canvas.bind("1", self.change_mapmode)
+        #self.canvas.bind("<Key>", self.change_mapmode)
         
         self.xpos = -100
         self.ypos = -100
@@ -77,6 +80,9 @@ class Map:
     def key_down(self, event):
         if event.char not in self.current_keys:
             self.current_keys.append(event.char)
+        if event.char in ["1", "2", "3"]:
+            mapmodes = ["standard", "layer", "solid"]
+            settings.mapmode_var.set(mapmodes[int(event.char)-1])
     
     def key_up(self, event):
         if event.char in self.current_keys:
@@ -124,9 +130,6 @@ class Map:
             elif settings.mapmode_var.get() == "solid" and item.is_solid:
                 self.canvas.create_rectangle(item.xpos-self.xpos+4, item.ypos-self.ypos+4, item.xpos-self.xpos+24, item.ypos-self.ypos+24, fill="black")
                
-    def change_mapmode(self, event):
-        print("bruhhhhh")
-        #settings.mapmode_var.set(mapmode)
        
                 
 class MapObject:
@@ -174,8 +177,8 @@ class TileSelection:
 tile_selection = TileSelection(root)
 _map = Map(root)
 settings = Settings(root)
-root.bind("<KeyPress>", _map.key_down)
-root.bind("<KeyRelease>", _map.key_up)
+root.bind_all("<KeyPress>", _map.key_down)
+root.bind_all("<KeyRelease>", _map.key_up)
 
 root.bind("<Control-s>", save_file)
 
