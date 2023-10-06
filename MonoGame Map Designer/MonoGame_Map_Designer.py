@@ -2,6 +2,7 @@ import tkinter as tk
 import time
 import os
 import math
+from tkinter.font import BOLD
 from unittest.mock import seal
 
 root = tk.Tk()
@@ -12,7 +13,7 @@ def save_file(event):
         file.writelines([item.get_output_string() for item in _map._map])
 
 
-#PATH = "C:\\Users\\alfre\\Source\\repos\\alfredsandare\\MonoGameTest\\MonoGameTest\\Content\\"
+#PATH = "C:\\Users\\alfre\\Source\\repos\\alfredsandare\\MonoGameTest\\MonoGameTest\\Content\\graphics\\"
 PATH = "C:\\users\\04alsa25\\source\\repos\\MonoGameTest\\MonoGameTest\\Content\\"
 
 menubar = tk.Menu(root)
@@ -31,7 +32,7 @@ class Settings:
         self.layer_label = tk.Label(root, text="Layer:")
         self.layer_label.grid(row=2, column=0)
         self.layer_entry = tk.Entry(root)
-        self.layer_entry.insert(0, "1")
+        self.layer_entry.insert(0, "0")
         self.layer_entry.grid(row=2, column=1)
         
         self.is_solid_var = tk.BooleanVar(value=True)
@@ -126,7 +127,7 @@ class Map:
         for item in self._map:
             self.canvas.create_image(item.xpos-self.xpos, item.ypos-self.ypos, anchor=tk.NW, image=tile_selection.sprites[item.sprite])
             if settings.mapmode_var.get() == "layer":
-                self.canvas.create_text(item.xpos-self.xpos+item.width/2, item.ypos-self.ypos+item.height/2, text=item.layer)
+                self.canvas.create_text(item.xpos-self.xpos+item.width/2, item.ypos-self.ypos+item.height/2, text=item.layer, font=('arial', 15, 'bold'))
             elif settings.mapmode_var.get() == "solid" and item.is_solid:
                 self.canvas.create_rectangle(item.xpos-self.xpos+4, item.ypos-self.ypos+4, item.xpos-self.xpos+24, item.ypos-self.ypos+24, fill="black")
                
@@ -154,10 +155,10 @@ class TileSelection:
         self.canvas.bind("<Button-1>", self.click)
         
         self.sprites = {}
-        os.chdir(PATH+"tiles\\")
+        os.chdir(PATH+"graphics\\tiles\\")
         items = os.listdir()
         for item in items:
-            self.sprites["tiles/"+item[:-4]] = tk.PhotoImage(file=PATH+"tiles\\"+item)
+            self.sprites["tiles/"+item[:-4]] = tk.PhotoImage(file=PATH+"graphics\\tiles\\"+item)
             
         self.selection_images = []
         for i, sprite in enumerate(self.sprites.values()):
