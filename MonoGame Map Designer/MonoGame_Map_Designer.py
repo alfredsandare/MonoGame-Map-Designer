@@ -13,8 +13,8 @@ def save_file(event):
         file.writelines([item.get_output_string() for item in _map._map])
 
 
-#PATH = "C:\\Users\\alfre\\Source\\repos\\alfredsandare\\MonoGameTest\\MonoGameTest\\Content\\graphics\\"
-PATH = "C:\\users\\04alsa25\\source\\repos\\MonoGameTest\\MonoGameTest\\Content\\"
+PATH = "C:\\Users\\alfre\\Source\\repos\\alfredsandare\\MonoGameTest\\MonoGameTest\\Content\\"
+#PATH = "C:\\users\\04alsa25\\source\\repos\\MonoGameTest\\MonoGameTest\\Content\\"
 
 menubar = tk.Menu(root)
 
@@ -131,7 +131,6 @@ class Map:
             elif settings.mapmode_var.get() == "solid" and item.is_solid:
                 self.canvas.create_rectangle(item.xpos-self.xpos+4, item.ypos-self.ypos+4, item.xpos-self.xpos+24, item.ypos-self.ypos+24, fill="black")
                
-       
                 
 class MapObject:
     def __init__(self, _type, sprite, xpos, ypos, width, height, layer, is_solid):
@@ -150,7 +149,7 @@ class MapObject:
 
 class TileSelection:
     def __init__(self, root):
-        self.canvas = tk.Canvas(root, width=1400, height=100)
+        self.canvas = tk.Canvas(root, width=1400, height=300)
         self.canvas.grid(row=0, column=0, columnspan=3)
         self.canvas.bind("<Button-1>", self.click)
         
@@ -162,16 +161,21 @@ class TileSelection:
             
         self.selection_images = []
         for i, sprite in enumerate(self.sprites.values()):
-            self.selection_images.append(self.canvas.create_image(40*i+5, 5, anchor=tk.NW, image=self.sprites[list(self.sprites.keys())[i]]))
+            x = 40*i - 35 * 40 * math.floor(i/35)+5
+            y = 40*math.floor(i/35)+5
+            print(x, y)
+            self.selection_images.append(self.canvas.create_image(x, y, anchor=tk.NW, image=self.sprites[list(self.sprites.keys())[i]]))
             
         self.selected_sprite = list(self.sprites.keys())[0]    
         self.selection_rect = self.canvas.create_rectangle(3, 3, 39, 39, width=2)
         
     def click(self, event):
-        item = math.floor(event.x / 40)
+        item = math.floor(event.x / 40) + 35 * math.floor(event.y / 40)
         if item < len(self.selection_images):
             self.selected_sprite = list(self.sprites.keys())[item]
-            self.canvas.coords(self.selection_rect, 40*item+3, 3, 40*item+39, 39)
+            x = 40*item - 35 * 40 * math.floor(item/35)+3
+            y = 40*math.floor(item/35)+3
+            self.canvas.coords(self.selection_rect, x, y, x+36, y+36)
         
         
 
