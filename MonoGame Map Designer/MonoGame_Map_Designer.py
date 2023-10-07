@@ -86,13 +86,19 @@ class Map:
     def key_down(self, event):
         if event.char not in self.current_keys:
             self.current_keys.append(event.char)
+        if event.keycode == 16 and 'L-Shift' not in self.current_keys: #l-shift
+            self.current_keys.append('L-Shift')
         if event.char in ["1", "2", "3"]:
             mapmodes = ["standard", "layer", "solid"]
             settings.mapmode_var.set(mapmodes[int(event.char)-1])
+            
+        print(self.current_keys)
     
     def key_up(self, event):
-        if event.char in self.current_keys:
+        if event.keysym in self.current_keys:
             self.current_keys.remove(event.char)
+        if event.keycode == 16 and 'L-Shift' in self.current_keys:
+            self.current_keys.remove('L-Shift')
             
     def click(self, event):
         if event.num == 1 and 'LMB' not in self.current_keys:
@@ -105,7 +111,7 @@ class Map:
             self.current_keys.remove('LMB')
         elif event.num == 3 and 'RMB' in self.current_keys:
             self.current_keys.remove('RMB')
-            self.items_not_to_remove.clear()
+        self.items_not_to_remove.clear()
         
     def mouse_motion(self, event):
         self.mouse_x = event.x
@@ -134,19 +140,28 @@ class Map:
             x -= x % 32
             y -= y % 32
     
+        items = self.get_item_id_by_pos(x, y)
         if 'LMB' in self.current_keys:
-            if settings.mapmode_var.get() == "standard" and len(self.get_item_id_by_pos(x, y)) < 2 and not any([self._map[item].sprite == tile_selection.selected_sprite for item in self.get_item_id_by_pos(x, y)]):
-                self._map.append(MapObject("VisualObject", tile_selection.selected_sprite, x, y, 32, 32, settings.layer_entry.get(), settings.is_solid_var.get()))
+            if settings.mapmode_var.get() == "standard" and len(items) < 2 and not any([self._map[item].sprite == tile_selection.selected_sprite for item in items]):
+                if len(items) == 0:
+                    self._map.append(MapObject("VisualObject", tile_selection.selected_sprite, x, y, 32, 32, settings.layer_entry.get(), settings.is_solid_var.get()))
+                elif 'L-Shift' in self.current_keys:
+                    print('shift')
+                    self._map.append(MapObject("VisualObject", tile_selection.selected_sprite, x, y, 32, 32, self._map[items[0]].layer-1, settings.is_solid_var.get()))
+                else:
+                    print('no shift')
+                    self._map.append(MapObject("VisualObject", tile_selection.selected_sprite, x, y, 32, 32, self._map[items[0]].layer+1, settings.is_solid_var.get()))
             
             elif settings.mapmode_var.get() == "layer" and any([item.xpos == x and item.ypos == y for item in self._map]):
                 items = self.get_item_id_by_pos(x, y)
                 self._map[items[len(items)-1]].layer = settings.layer_entry.get()
             
-            elif settings.mapmode_var.get() == "solid" and any([item.xpos == x and item.ypos == y for item in self._map]):
+            elif settings.mapmode_var.get() == "solid" and any([item.xpos == x and item.ypos == y for item in self._map]) and (x, y) not in self.items_not_to_remove:
                 items = self.get_item_id_by_pos(x, y)
                 self._map[items[len(items)-1]].is_solid = not self._map[items[len(items)-1]].is_solid
+                self.items_not_to_remove.append((x, y))
 
-        elif 'RMB' in self.current_keys and any([item.xpos == x and item.ypos == y for item in self._map]) and (x, y) not in self.items_not_to_remove:
+        elif 'RMB' in self.current_keys and any([item.xpos == x and item.ypos == y for item in self._map]) and (x, y) not in self.items_not_to_remove and settings.mapmode_var.get() == 'standard':
             items = self.get_item_id_by_pos(x, y)
             self._map.pop(items[len(items)-1])
             if len(self.get_item_id_by_pos(x, y)) > 0:
@@ -155,6 +170,7 @@ class Map:
             
     def render(self):
         self.canvas.delete("all")
+
         for item in self._map:
             self.canvas.create_image(item.xpos-self.xpos, item.ypos-self.ypos, anchor=tk.NW, image=tile_selection.sprites[item.sprite])
             if settings.mapmode_var.get() == "layer":
@@ -206,7 +222,6 @@ class TileSelection:
             x = 40*item - 35 * 40 * math.floor(item/35)+3
             y = 40*math.floor(item/35)+3
             self.canvas.coords(self.selection_rect, x, y, x+36, y+36)
-        
         
 
 tile_selection = TileSelection(root)
