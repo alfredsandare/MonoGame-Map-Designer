@@ -62,17 +62,22 @@ class Map:
         self.canvas.grid(row=1, column=2, padx=4, rowspan=10)
         self.canvas.bind("<Button-1>", self.click)
         self.canvas.bind("<Button-3>", self.click)
-        
-        #self.canvas.bind("<Key>", self.change_mapmode)
+        self.canvas.bind("<ButtonRelease-1>", self.click_up)
+        self.canvas.bind("<ButtonRelease-3>", self.click_up)
+        self.canvas.bind("<Motion>", self.mouse_motion)
         
         self.xpos = -100
         self.ypos = -100
         self.camera_speed = 3
         
+        self.mouse_x = 0
+        self.mouse_y = 0
+        
+        self.items_not_to_remove = []
+        
         self.current_keys = []
         
         self._map = []
-        
         with open(PATH+"map.txt", "r") as file:
             for line in file:
                 args = line.split()
@@ -90,27 +95,28 @@ class Map:
             self.current_keys.remove(event.char)
             
     def click(self, event):
-        x, y = event.x + self.xpos, event.y + self.ypos
-        if settings.snap_to_grid_var.get():
-            x -= x % 32
-            y -= y % 32
-        
-        if event.num == 1:
-            if settings.mapmode_var.get() == "standard" and not any([item.xpos == x and item.ypos == y for item in self._map]):
-                self._map.append(MapObject("VisualObject", tile_selection.selected_sprite, x, y, 32, 32, settings.layer_entry.get(), settings.is_solid_var.get()))
-            elif settings.mapmode_var.get() == "layer" and any([item.xpos == x and item.ypos == y for item in self._map]):
-                self._map[self.get_item_id_by_pos(x, y)].layer = settings.layer_entry.get()
-            elif settings.mapmode_var.get() == "solid" and any([item.xpos == x and item.ypos == y for item in self._map]):
-                self._map[self.get_item_id_by_pos(x, y)].is_solid = not self._map[self.get_item_id_by_pos(x, y)].is_solid
-                
-        elif event.num == 3 and any([item.xpos == x and item.ypos == y for item in self._map]):
-            self._map.pop(self.get_item_id_by_pos(x, y))
+        if event.num == 1 and 'LMB' not in self.current_keys:
+            self.current_keys.append('LMB')
+        elif event.num == 3 and 'RMB' not in self.current_keys:
+            self.current_keys.append('RMB')
             
+    def click_up(self, event):
+        if event.num == 1 and 'LMB' in self.current_keys:
+            self.current_keys.remove('LMB')
+        elif event.num == 3 and 'RMB' in self.current_keys:
+            self.current_keys.remove('RMB')
+            self.items_not_to_remove.clear()
+        
+    def mouse_motion(self, event):
+        self.mouse_x = event.x
+        self.mouse_y = event.y
+        
     def get_item_id_by_pos(self, x, y):
+        output = []
         for i, item in enumerate(self._map):
             if item.xpos == x and item.ypos == y:
-                break
-        return i
+                output.append(i)
+        return output
         
     def update(self):
         if "w" in self.current_keys and "s" not in self.current_keys:
@@ -121,6 +127,31 @@ class Map:
             self.xpos -= self.camera_speed
         elif "d" in self.current_keys and "a" not in self.current_keys:
             self.xpos += self.camera_speed
+            
+
+        x, y = self.mouse_x + self.xpos, self.mouse_y + self.ypos
+        if settings.snap_to_grid_var.get():
+            x -= x % 32
+            y -= y % 32
+    
+        if 'LMB' in self.current_keys:
+            if settings.mapmode_var.get() == "standard" and len(self.get_item_id_by_pos(x, y)) < 2 and not any([self._map[item].sprite == tile_selection.selected_sprite for item in self.get_item_id_by_pos(x, y)]):
+                self._map.append(MapObject("VisualObject", tile_selection.selected_sprite, x, y, 32, 32, settings.layer_entry.get(), settings.is_solid_var.get()))
+            
+            elif settings.mapmode_var.get() == "layer" and any([item.xpos == x and item.ypos == y for item in self._map]):
+                items = self.get_item_id_by_pos(x, y)
+                self._map[items[len(items)-1]].layer = settings.layer_entry.get()
+            
+            elif settings.mapmode_var.get() == "solid" and any([item.xpos == x and item.ypos == y for item in self._map]):
+                items = self.get_item_id_by_pos(x, y)
+                self._map[items[len(items)-1]].is_solid = not self._map[items[len(items)-1]].is_solid
+
+        elif 'RMB' in self.current_keys and any([item.xpos == x and item.ypos == y for item in self._map]) and (x, y) not in self.items_not_to_remove:
+            items = self.get_item_id_by_pos(x, y)
+            self._map.pop(items[len(items)-1])
+            if len(self.get_item_id_by_pos(x, y)) > 0:
+                self.items_not_to_remove.append((x, y))
+
             
     def render(self):
         self.canvas.delete("all")
@@ -163,7 +194,6 @@ class TileSelection:
         for i, sprite in enumerate(self.sprites.values()):
             x = 40*i - 35 * 40 * math.floor(i/35)+5
             y = 40*math.floor(i/35)+5
-            print(x, y)
             self.selection_images.append(self.canvas.create_image(x, y, anchor=tk.NW, image=self.sprites[list(self.sprites.keys())[i]]))
             
         self.selected_sprite = list(self.sprites.keys())[0]    
