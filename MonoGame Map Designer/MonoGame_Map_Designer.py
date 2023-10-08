@@ -1,3 +1,4 @@
+from asyncio import Condition
 import tkinter as tk
 import time
 import os
@@ -146,10 +147,8 @@ class Map:
                 if len(items) == 0:
                     self._map.append(MapObject("VisualObject", tile_selection.selected_sprite, x, y, 32, 32, settings.layer_entry.get(), settings.is_solid_var.get()))
                 elif 'L-Shift' in self.current_keys:
-                    print('shift')
                     self._map.append(MapObject("VisualObject", tile_selection.selected_sprite, x, y, 32, 32, self._map[items[0]].layer-1, settings.is_solid_var.get()))
                 else:
-                    print('no shift')
                     self._map.append(MapObject("VisualObject", tile_selection.selected_sprite, x, y, 32, 32, self._map[items[0]].layer+1, settings.is_solid_var.get()))
             
             elif settings.mapmode_var.get() == "layer" and any([item.xpos == x and item.ypos == y for item in self._map]):
@@ -162,22 +161,37 @@ class Map:
                 self.items_not_to_remove.append((x, y))
 
         elif 'RMB' in self.current_keys and any([item.xpos == x and item.ypos == y for item in self._map]) and (x, y) not in self.items_not_to_remove and settings.mapmode_var.get() == 'standard':
-            items = self.get_item_id_by_pos(x, y)
-            self._map.pop(items[len(items)-1])
+            if len(items) == 2:
+                sum_of_conditions = int(self._map[items[0]].layer < self._map[items[1]].layer) + int('L-Shift' in self.current_keys)
+                self._map.pop(items[sum_of_conditions % 2])
+            else:
+                self._map.pop(items[0])
             if len(self.get_item_id_by_pos(x, y)) > 0:
                 self.items_not_to_remove.append((x, y))
 
             
     def render(self):
         self.canvas.delete("all")
-
+       
+        sorted_map = []
         for item in self._map:
+            added = False
+            for i in range(len(sorted_map)-1):
+                if (item.layer <= sorted_map[i].layer):
+                    sorted_map.insert(i, item)
+                    added = True
+                    break
+            if not added:
+                sorted_map.insert(0, item)
+
+        for item in sorted_map:
+            print(item.layer)
             self.canvas.create_image(item.xpos-self.xpos, item.ypos-self.ypos, anchor=tk.NW, image=tile_selection.sprites[item.sprite])
             if settings.mapmode_var.get() == "layer":
                 self.canvas.create_text(item.xpos-self.xpos+item.width/2, item.ypos-self.ypos+item.height/2, text=item.layer, font=('arial', 15, 'bold'))
             elif settings.mapmode_var.get() == "solid" and item.is_solid:
                 self.canvas.create_rectangle(item.xpos-self.xpos+4, item.ypos-self.ypos+4, item.xpos-self.xpos+24, item.ypos-self.ypos+24, fill="black")
-               
+     
                 
 class MapObject:
     def __init__(self, _type, sprite, xpos, ypos, width, height, layer, is_solid):
