@@ -1,5 +1,7 @@
 from asyncio import Condition
+from distutils.sysconfig import customize_compiler
 import tkinter as tk
+from tkinter import ttk
 import time
 import os
 import math
@@ -13,6 +15,10 @@ def save_file(event):
     with open(PATH+"map.txt", "w") as file:
         file.writelines([item.get_output_string() for item in _map._map])
 
+def create_new_hitbox_window():
+    global custom_hitbox_window
+    if custom_hitbox_window == None:
+        custom_hitbox_window = CustomHitboxWindow()
 
 PATH = "C:\\Users\\alfre\\Source\\repos\\alfredsandare\\MonoGameTest\\MonoGameTest\\Content\\"
 #PATH = "C:\\users\\04alsa25\\source\\repos\\MonoGameTest\\MonoGameTest\\Content\\"
@@ -53,8 +59,14 @@ class Settings:
         self.mapmode_layer_radiobutton = tk.Radiobutton(root, var=self.mapmode_var, text="Solid", value="solid")
         self.mapmode_layer_radiobutton.grid(row=7, column=0, sticky=tk.W, columnspan=2)
         
+        self.mapmode_layer_radiobutton = tk.Radiobutton(root, var=self.mapmode_var, text="Hitboxes", value="hitboxes")
+        self.mapmode_layer_radiobutton.grid(row=8, column=0, sticky=tk.W, columnspan=2)
+        
+        self.custom_hitboxes_button = tk.Button(root, text="Custom Hitboxes", command=create_new_hitbox_window)
+        self.custom_hitboxes_button.grid(row=9, column=0, sticky=tk.W, columnspan=2)
+        
         self.empty = tk.Label(text="")
-        self.empty.grid(row=8, column=0, pady=260)
+        self.empty.grid(row=10, column=0, pady=260)
         
 
 class Map:
@@ -89,12 +101,10 @@ class Map:
             self.current_keys.append(event.char)
         if event.keycode == 16 and 'L-Shift' not in self.current_keys: #l-shift
             self.current_keys.append('L-Shift')
-        if event.char in ["1", "2", "3"]:
-            mapmodes = ["standard", "layer", "solid"]
+        if event.char in ["1", "2", "3", "4"]:
+            mapmodes = ["standard", "layer", "solid", "hitboxes"]
             settings.mapmode_var.set(mapmodes[int(event.char)-1])
             
-        print(self.current_keys)
-    
     def key_up(self, event):
         if event.keysym in self.current_keys:
             self.current_keys.remove(event.char)
@@ -135,7 +145,6 @@ class Map:
         elif "d" in self.current_keys and "a" not in self.current_keys:
             self.xpos += self.camera_speed
             
-
         x, y = self.mouse_x + self.xpos, self.mouse_y + self.ypos
         if settings.snap_to_grid_var.get():
             x -= x % 32
@@ -169,29 +178,32 @@ class Map:
             if len(self.get_item_id_by_pos(x, y)) > 0:
                 self.items_not_to_remove.append((x, y))
 
-            
     def render(self):
         self.canvas.delete("all")
-       
-        sorted_map = []
-        for item in self._map:
-            added = False
-            for i in range(len(sorted_map)-1):
-                if (item.layer <= sorted_map[i].layer):
-                    sorted_map.insert(i, item)
-                    added = True
-                    break
-            if not added:
-                sorted_map.insert(0, item)
+        
+        if settings.mapmode_var.get() != 'hitboxes':
+            sorted_map = []
+            for item in self._map:
+                added = False
+                for i in range(len(sorted_map)-1):
+                    if (item.layer <= sorted_map[i].layer):
+                        sorted_map.insert(i, item)
+                        added = True
+                        break
+                if not added:
+                    sorted_map.insert(0, item)
 
-        for item in sorted_map:
-            print(item.layer)
-            self.canvas.create_image(item.xpos-self.xpos, item.ypos-self.ypos, anchor=tk.NW, image=tile_selection.sprites[item.sprite])
-            if settings.mapmode_var.get() == "layer":
-                self.canvas.create_text(item.xpos-self.xpos+item.width/2, item.ypos-self.ypos+item.height/2, text=item.layer, font=('arial', 15, 'bold'))
-            elif settings.mapmode_var.get() == "solid" and item.is_solid:
-                self.canvas.create_rectangle(item.xpos-self.xpos+4, item.ypos-self.ypos+4, item.xpos-self.xpos+24, item.ypos-self.ypos+24, fill="black")
+            for item in sorted_map:
+                self.canvas.create_image(item.xpos-self.xpos, item.ypos-self.ypos, anchor=tk.NW, image=tile_selection.sprites[item.sprite])
+                if settings.mapmode_var.get() == "layer":
+                    self.canvas.create_text(item.xpos-self.xpos+item.width/2, item.ypos-self.ypos+item.height/2, text=item.layer, font=('arial', 15, 'bold'))
+                elif settings.mapmode_var.get() == "solid" and item.is_solid:
+                    self.canvas.create_rectangle(item.xpos-self.xpos+4, item.ypos-self.ypos+4, item.xpos-self.xpos+24, item.ypos-self.ypos+24, fill="black")
      
+        else:
+            for item in self._map:
+                self.canvas.create_rectangle(item.xpos-self.xpos,  item.ypos-self.ypos, item.xpos-self.xpos+item.width, item.ypos-self.ypos+item.height, fill='black')
+                
                 
 class MapObject:
     def __init__(self, _type, sprite, xpos, ypos, width, height, layer, is_solid):
@@ -238,9 +250,26 @@ class TileSelection:
             self.canvas.coords(self.selection_rect, x, y, x+36, y+36)
         
 
+class CustomHitboxWindow:
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.title("Custom Hitboxes")
+        
+        self.treeview = ttk.Treeview(self.root, columns=("position", "size"), show="headings")
+        self.treeview.grid(row=0, column=0)
+        self.treeview.heading("position", text="Position")
+        self.treeview.heading("size", text="Size")
+        
+        for item in _map._map:
+            if item._type == 'custom_hitbox':
+                pass
+        
+
 tile_selection = TileSelection(root)
 _map = Map(root)
 settings = Settings(root)
+global custom_hitbox_window
+custom_hitbox_window = None
 root.bind_all("<KeyPress>", _map.key_down)
 root.bind_all("<KeyRelease>", _map.key_up)
 
@@ -251,4 +280,6 @@ while 1:
     _map.update()
     _map.render()
     root.update()
+    if custom_hitbox_window != None:
+        custom_hitbox_window.root.update()
     time.sleep(0.0166667)
