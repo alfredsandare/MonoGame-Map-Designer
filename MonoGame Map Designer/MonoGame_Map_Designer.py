@@ -14,8 +14,8 @@ def save_file(event):
         file.writelines([item.get_output_string() for item in _map._map])
 
 
-PATH = "C:\\Users\\alfre\\Source\\repos\\alfredsandare\\MonoGameTest\\MonoGameTest\\Content\\"
-#PATH = "C:\\users\\04alsa25\\source\\repos\\MonoGameTest\\MonoGameTest\\Content\\"
+#PATH = "C:\\Users\\alfre\\Source\\repos\\alfredsandare\\MonoGameTest\\MonoGameTest\\Content\\"
+PATH = "C:\\users\\04alsa25\\source\\repos\\MonoGameTest\\MonoGameTest\\Content\\"
 
 menubar = tk.Menu(root)
 
