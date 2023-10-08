@@ -20,8 +20,8 @@ def create_new_hitbox_window():
     if custom_hitbox_window == None:
         custom_hitbox_window = CustomHitboxWindow()
 
-PATH = "C:\\Users\\alfre\\Source\\repos\\alfredsandare\\MonoGameTest\\MonoGameTest\\Content\\"
-#PATH = "C:\\users\\04alsa25\\source\\repos\\MonoGameTest\\MonoGameTest\\Content\\"
+#PATH = "C:\\Users\\alfre\\Source\\repos\\alfredsandare\\MonoGameTest\\MonoGameTest\\Content\\"
+PATH = "C:\\users\\04alsa25\\source\\repos\\MonoGameTest\\MonoGameTest\\Content\\"
 
 menubar = tk.Menu(root)
 
