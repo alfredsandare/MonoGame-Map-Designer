@@ -41,6 +41,7 @@ class Settings:
         self.layer_entry = tk.Entry(root)
         self.layer_entry.insert(0, "0")
         self.layer_entry.grid(row=2, column=1)
+        self.layer_entry.bind("<Return>", self.defocus_layer_entry)
         
         self.is_solid_var = tk.BooleanVar(value=True)
         self.is_solid_checkbutton = tk.Checkbutton(root, var=self.is_solid_var, text="Solid")
@@ -67,6 +68,10 @@ class Settings:
         
         self.empty = tk.Label(text="")
         self.empty.grid(row=10, column=0, pady=260)
+        
+    def defocus_layer_entry(self, event):
+        print("bantes")
+        self.layer_label.focus()
         
 
 class Map:
@@ -153,7 +158,7 @@ class Map:
         items = self.get_item_id_by_pos(x, y)
         if 'LMB' in self.current_keys:
             if settings.mapmode_var.get() == "standard" and len(items) < 2 and not any([self._map[item].sprite == tile_selection.selected_sprite for item in items]):
-                if len(items) == 0:
+                if len(items) == 0 or int(settings.layer_entry.get()) > self._map[items[0]].layer:
                     self._map.append(MapObject("VisualObject", tile_selection.selected_sprite, x, y, 32, 32, settings.layer_entry.get(), settings.is_solid_var.get()))
                 elif 'L-Shift' in self.current_keys:
                     self._map.append(MapObject("VisualObject", tile_selection.selected_sprite, x, y, 32, 32, self._map[items[0]].layer-1, settings.is_solid_var.get()))
@@ -161,12 +166,12 @@ class Map:
                     self._map.append(MapObject("VisualObject", tile_selection.selected_sprite, x, y, 32, 32, self._map[items[0]].layer+1, settings.is_solid_var.get()))
             
             elif settings.mapmode_var.get() == "layer" and any([item.xpos == x and item.ypos == y for item in self._map]):
-                items = self.get_item_id_by_pos(x, y)
                 self._map[items[len(items)-1]].layer = settings.layer_entry.get()
             
             elif settings.mapmode_var.get() == "solid" and any([item.xpos == x and item.ypos == y for item in self._map]) and (x, y) not in self.items_not_to_remove:
-                items = self.get_item_id_by_pos(x, y)
-                self._map[items[len(items)-1]].is_solid = not self._map[items[len(items)-1]].is_solid
+                state = any([bool(self._map[item].is_solid) for item in items])
+                for item in items:
+                    self._map[item].is_solid = not state
                 self.items_not_to_remove.append((x, y))
 
         elif 'RMB' in self.current_keys and any([item.xpos == x and item.ypos == y for item in self._map]) and (x, y) not in self.items_not_to_remove and settings.mapmode_var.get() == 'standard':
@@ -191,15 +196,16 @@ class Map:
                         added = True
                         break
                 if not added:
-                    sorted_map.insert(0, item)
+                    sorted_map.append(item)
 
             for item in sorted_map:
-                self.canvas.create_image(item.xpos-self.xpos, item.ypos-self.ypos, anchor=tk.NW, image=tile_selection.sprites[item.sprite])
+                if item._type != "custom_hitbox":
+                    self.canvas.create_image(item.xpos-self.xpos, item.ypos-self.ypos, anchor=tk.NW, image=tile_selection.sprites[item.sprite])
                 if settings.mapmode_var.get() == "layer":
                     self.canvas.create_text(item.xpos-self.xpos+item.width/2, item.ypos-self.ypos+item.height/2, text=item.layer, font=('arial', 15, 'bold'))
                 elif settings.mapmode_var.get() == "solid" and item.is_solid:
                     self.canvas.create_rectangle(item.xpos-self.xpos+4, item.ypos-self.ypos+4, item.xpos-self.xpos+24, item.ypos-self.ypos+24, fill="black")
-     
+        
         else:
             for item in self._map:
                 self.canvas.create_rectangle(item.xpos-self.xpos,  item.ypos-self.ypos, item.xpos-self.xpos+item.width, item.ypos-self.ypos+item.height, fill='black')
@@ -256,13 +262,38 @@ class CustomHitboxWindow:
         self.root.title("Custom Hitboxes")
         
         self.treeview = ttk.Treeview(self.root, columns=("position", "size"), show="headings")
-        self.treeview.grid(row=0, column=0)
+        self.treeview.grid(row=0, column=0, columnspan=2)
         self.treeview.heading("position", text="Position")
         self.treeview.heading("size", text="Size")
         
+        self.text_labels = []
+        self.entries = []
+        text = ["xpos", "ypos", "width", "height"]
+        for i in range(4):
+            self.text_labels.append(tk.Label(self.root, text=text[i]))
+            self.text_labels[i].grid(row=i+1, column=0)
+            self.entries.append(tk.Entry(self.root))
+            self.entries[i].grid(row=i+1, column=1)
+        
+        self.add_button = tk.Button(self.root, text="Add", command=self.add)
+        self.add_button.grid(row=5, column=0)
+        
+        self.remove_button = tk.Button(self.root, text="Remove", command=self.remove)
+        self.update_treeview()
+        
+                
+            
+    def add(self):
+        _map._map.append(MapObject("custom_hitbox", None, *[entry.get() for entry in self.entries], 0, 1))
+        self.update_treeview()
+    
+    def remove(self):
+        pass
+    
+    def update_treeview(self):
         for item in _map._map:
             if item._type == 'custom_hitbox':
-                pass
+                self.treeview.insert("", tk.END, values=(f"{item.xpos}, {item.ypos}", f"{item.width}, {item.height}"))
         
 
 tile_selection = TileSelection(root)
@@ -275,8 +306,12 @@ root.bind_all("<KeyRelease>", _map.key_up)
 
 root.bind("<Control-s>", save_file)
 
+position_label = tk.Label(root, text="")
+position_label.grid(row=0, column=0)
+
 
 while 1:
+    position_label.config(text=f"{_map.mouse_x+_map.xpos}, {_map.mouse_y+_map.ypos}")
     _map.update()
     _map.render()
     root.update()
